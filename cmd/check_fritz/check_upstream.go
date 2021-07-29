@@ -54,7 +54,7 @@ func CheckUpstreamMax(aI ArgumentInformation) {
 			panic(err)
 		}
 
-		upstream = ups / 1000
+		upstream = ups / float64(*aI.DivisorMax)
 	} else {
 		soapResp := fritz.WANCommonInterfaceCommonLinkPropertiesResponse{}
 		err = fritz.UnmarshalSoapResponse(&soapResp, res)
@@ -69,7 +69,7 @@ func CheckUpstreamMax(aI ArgumentInformation) {
 			panic(err)
 		}
 
-		upstream = ups / 1000000
+		upstream = ups / float64(*aI.DivisorMax)
 	}
 
 	perfData := perfdata.CreatePerformanceData("upstream_max", upstream, "")
@@ -134,7 +134,7 @@ func CheckUpstreamCurrent(aI ArgumentInformation) {
 		panic(err)
 	}
 
-	upstream = upstream * 8 / 1000000
+	upstream = upstream * 8 / float64(*aI.DivisorCurrent)
 	perfData := perfdata.CreatePerformanceData("upstream_current", upstream, "")
 
 	GlobalReturnCode = exitOk
@@ -233,7 +233,7 @@ func CheckUpstreamUsage(aI ArgumentInformation) {
 			panic(err)
 		}
 
-		upstreamMax = ups / 1000
+		upstreamMax = ups / float64(*aI.DivisorMax)
 	} else {
 		soapResp := fritz.WANCommonInterfaceCommonLinkPropertiesResponse{}
 		err = fritz.UnmarshalSoapResponse(&soapResp, res)
@@ -248,10 +248,10 @@ func CheckUpstreamUsage(aI ArgumentInformation) {
 			panic(err)
 		}
 
-		upstreamMax = ups / 1000000
+		upstreamMax = ups / float64(*aI.DivisorMax)
 	}
 
-	upstreamCurrent = upstreamCurrent * 8 / 1000000
+	upstreamCurrent = upstreamCurrent * 8 / float64(*aI.DivisorCurrent)
 
 	if upstreamMax == 0 {
 		fmt.Printf("UNKNOWN - Maximum Downstream is 0\n")

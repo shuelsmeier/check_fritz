@@ -23,20 +23,22 @@ var GlobalReturnCode = exitUnknown
 
 // ArgumentInformation is the data structure for the passed arguments
 type ArgumentInformation struct {
-	Hostname      *string
-	Port          *string
-	Username      *string
-	Password      *string
-	Method        *string
-	Warning       *float64
-	Critical      *float64
-	InputVariable *string
-	Timeout       *int
-	Modelgroup    *string
-	Debug         bool
+	Hostname       *string
+	Port           *string
+	Username       *string
+	Password       *string
+	Method         *string
+	Warning        *float64
+	Critical       *float64
+	InputVariable  *string
+	Timeout        *int
+	Modelgroup     *string
+	Debug          bool
+	DivisorMax     *int
+	DivisorCurrent *int
 }
 
-func createRequiredArgumentInformation(hostname string, port string, username string, password string, method string, timeout int, modelgroup string) ArgumentInformation {
+func createRequiredArgumentInformation(hostname string, port string, username string, password string, method string, timeout int, modelgroup string, divisormax int, divisorcurrent int) ArgumentInformation {
 	var ai ArgumentInformation
 
 	ai.Hostname = &hostname
@@ -47,6 +49,8 @@ func createRequiredArgumentInformation(hostname string, port string, username st
 	ai.Modelgroup = &modelgroup
 	ai.Timeout = &timeout
 	ai.Debug = false
+	ai.DivisorMax = &divisormax
+	ai.DivisorCurrent = &divisorcurrent
 
 	return ai
 }
@@ -65,6 +69,24 @@ func (ai *ArgumentInformation) createInputVariable(v string) {
 
 func (ai *ArgumentInformation) setDebugMode() {
 	ai.Debug = true
+}
+
+func (ai *ArgumentInformation) setDivisorMax(modelGroup string) {
+	if modelGroup == "DSL" {
+		*ai.DivisorMax = 1000
+	}
+	if modelGroup == "Cable" {
+		*ai.DivisorMax = 1000000
+	}
+}
+
+func (ai *ArgumentInformation) setDivisorCurrent(modelGroup string) {
+	if modelGroup == "DSL" {
+		*ai.DivisorCurrent = 1000
+	}
+	if modelGroup == "Cable" {
+		*ai.DivisorCurrent = 1000000
+	}
 }
 
 func printVersion() {
@@ -105,13 +127,15 @@ func HandleError(err error) bool {
 func checkMain(c *cli.Context) error {
 
 	type param struct {
-		Hostname   string
-		Port       string
-		Username   string
-		Password   string
-		Method     string
-		Timeout    int
-		ModelGroup string
+		Hostname       string
+		Port           string
+		Username       string
+		Password       string
+		Method         string
+		Timeout        int
+		ModelGroup     string
+		DivisorMax     int
+		DivisorCurrent int
 	}
 
 	p := param{}
@@ -127,8 +151,10 @@ func checkMain(c *cli.Context) error {
 	p.Method = c.String("method")
 	p.Timeout = c.Int("timeout")
 	p.ModelGroup = c.String("modelgroup")
+	p.DivisorMax = c.Int("divisormax")
+	p.DivisorCurrent = c.Int("divisorcurrent")
 
-	argInfo := createRequiredArgumentInformation(p.Hostname, p.Port, p.Username, p.Password, p.Method, p.Timeout, p.ModelGroup)
+	argInfo := createRequiredArgumentInformation(p.Hostname, p.Port, p.Username, p.Password, p.Method, p.Timeout, p.ModelGroup, p.DivisorMax, p.DivisorCurrent)
 
 	if c.IsSet("warning") {
 		argInfo.createWarningThreshold(c.Float64("warning"))
@@ -144,6 +170,14 @@ func checkMain(c *cli.Context) error {
 
 	if c.IsSet("debug") {
 		argInfo.setDebugMode()
+	}
+
+	if !c.IsSet("divisormax") {
+		argInfo.setDivisorMax(p.ModelGroup)
+	}
+
+	if !c.IsSet("divisorcurrent") {
+		argInfo.setDivisorCurrent(p.ModelGroup)
 	}
 
 	if !checkRequiredFlags(&argInfo) {
@@ -246,7 +280,7 @@ func main() {
 				Value:       "DSL",
 				DefaultText: "DSL",
 				Aliases:     []string{"M"},
-				Usage:       "Specifies the Fritz!Bpx model group (DSL or Cable).",
+				Usage:       "Specifies the Fritz!Box model group (DSL or Cable).",
 			},
 			&cli.Float64Flag{
 				Name:    "warning",
@@ -262,6 +296,20 @@ func main() {
 				Name:    "debug",
 				Aliases: []string{"d"},
 				Usage:   "Outputs debug information",
+			},
+			&cli.IntFlag{
+				Name:        "divisormax",
+				Aliases:     []string{"dm"},
+				Value:       -1,
+				DefaultText: "-1",
+				Usage:       "Specifies the divisor for downstream/upstream max calculation.",
+			},
+			&cli.IntFlag{
+				Name:        "divisorcurrent",
+				Aliases:     []string{"dc"},
+				Value:       -1,
+				DefaultText: "-1",
+				Usage:       "Specifies the divisor for downstream/upstream current calculation.",
 			},
 		},
 	}
